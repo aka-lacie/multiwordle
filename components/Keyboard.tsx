@@ -7,8 +7,8 @@ const keyboardLayout = [
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACK'],
 ];
 
-function Keyboard({ onCurrentGuessUpdate, onEnter, showLetters }
-  : { onCurrentGuessUpdate: (guess: string) => void, onEnter: (currentGuess: string) => Promise<boolean>, showLetters: boolean }) {
+function Keyboard({ keyColors, onCurrentGuessUpdate, onEnter }
+  : { keyColors: Map<string, string>, onCurrentGuessUpdate: (guess: string) => void, onEnter: (currentGuess: string) => Promise<boolean> }) {
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
   
   const handleKeyClick = (letter: string) => {
@@ -74,6 +74,7 @@ function Keyboard({ onCurrentGuessUpdate, onEnter, showLetters }
             <Key
               key={letter}
               letter={letter}
+              color={keyColors.get(letter)}
               onClick={handleKeyClick}
               disabled={
                 letter === 'ENTER' && currentGuess.length < 5 || 
@@ -87,9 +88,21 @@ function Keyboard({ onCurrentGuessUpdate, onEnter, showLetters }
   );
 }
 
-function Key({ letter, onClick, disabled }) {
+function Key({ letter, color, onClick, disabled }) {
+  let bgColor = '#d3d6da';
+  switch (color) {
+    case 'green':
+      bgColor = '#6aaa64'
+      break
+    case 'yellow':
+      bgColor = '#c9b458'
+      break
+    case 'grey':
+      bgColor = '#787c7e'
+  }
+  
   const style = {
-    backgroundColor: '#d3d6da', 
+    backgroundColor: bgColor, 
     border: 'None',
     fontFamily: "nyt-franklin, helvetica, sans-serif",
     fontWeight: "bold",

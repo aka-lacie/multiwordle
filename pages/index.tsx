@@ -30,7 +30,7 @@ export default function Home() {
       <h1 style={{ textAlign: 'center' }}>'Round The Wordle</h1>
       <hr/>
       <div>{ socket && <Body socket={socket}/> }</div>
-      <div>Your ID: { socket && socket.id}</div>
+      {/* <div>Your ID: { socket && socket.id}</div> */}
     </>
   )
 }

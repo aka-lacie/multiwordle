@@ -6,6 +6,7 @@ import Keyboard from './Keyboard'
 type Attempt = {
   word: string,
   statuses: string[],
+  showLetters: boolean,
 }
 
 export default function Game({ socket, room, isHost, SOLUTION } 
@@ -31,43 +32,69 @@ export default function Game({ socket, room, isHost, SOLUTION }
   const [currentGuess, setCurrentGuess] = useState<string>('');
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [gameOver, setGameOver] = useState<string>('');
+  
+  const keyArray = [
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 
+    'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+    'Z', 'X', 'C', 'V', 'B', 'N', 'M',
+  ];
+  const [keyColors, setKeyColors] = useState<Map<string, string>>(new Map(keyArray.map((key) => [key, ''])));
 
   function handleStartTurn(currPlayerId: string, guess: string) {
-    // Check the latest guess against the SOLUTION to determine the statuses
-    if (guess) {
-      console.log("guess: " + guess)
-      const statuses = guess.split('').map((letter, index) => {
-        if (letter === SOLUTION[index]) {
-          return 'green';
-        } else if (SOLUTION.includes(letter)) {
-          return 'yellow';
-        } else {
-          return 'grey';
+    // Figure out if it's my turn
+    // Wrap everything else into a callback bc we need the updated turn state for setting attempts
+    setIsMyTurn((prevIsMyTurn) => {
+      const myTurn = currPlayerId === socket.id;
+      if (myTurn) console.log("It's your turn!");
+  
+      // Check the latest guess against the SOLUTION to determine the statuses
+      if (guess) {
+        console.log("guess: " + guess)
+        const statuses = guess.split('').map((letter, index) => {
+          if (letter === SOLUTION[index]) {
+            setKeyColors((prevKeyColors) => new Map(prevKeyColors.set(letter, 'green')));
+            return 'green';
+          } else if (SOLUTION.includes(letter)) {
+            // We only want to set yellow if the letter hasn't already been set to green
+            setKeyColors((prevKeyColors) => 
+              prevKeyColors.get(letter) === '' ?
+                new Map(prevKeyColors.set(letter, 'yellow')) : 
+                prevKeyColors
+              );
+            return 'yellow';
+          } else {
+            setKeyColors((prevKeyColors) => new Map(prevKeyColors.set(letter, 'grey')));
+            return 'grey';
+          }
+        });
+        
+        // If the guess matches the SOLUTION, show the victory notice
+        if (guess === SOLUTION) {
+          setGameOver('win');
         }
-      });
-      
-      // If the guess matches the SOLUTION, show the victory notice
-      if (guess === SOLUTION) {
-        setGameOver('win');
+        
+        // Add the guess to the attempts
+        setAttempts((prevAttempts) => [...prevAttempts, { word: guess, statuses, showLetters: myTurn }]);
       }
       
-      setAttempts((prevAttempts) => [...prevAttempts, { word: guess, statuses }]);
-    }
-
-
-    // Figure out if it's my turn
-    setIsMyTurn(currPlayerId === socket.id);
-    if (currPlayerId === socket.id) console.log("It's your turn!");
+      return myTurn;
+    });
   }
 
   // Monitor for game over
   useEffect(() => {
-    // If out of tries, mount the defeat screen
+    // If out of tries, show the defeat notice
     if (attempts.length === 6) {
       if (!gameOver) setGameOver('lose');
     }
   }, [attempts]);
 
+  // When gameOver, show all letters
+  useEffect(() => {
+    if (gameOver) {
+      setAttempts((prevAttempts) => prevAttempts.map((attempt) => ({ ...attempt, showLetters: true })));
+    }
+  }, [gameOver]);
 
   function handleCurrentGuessUpdate(updatedGuess: string) {
     console.log("handleCurrentGuessUpdate called with:", updatedGuess);
@@ -97,9 +124,20 @@ export default function Game({ socket, room, isHost, SOLUTION }
     <Container className="align-items-center d-flex" style={{ height: '100vh', flexDirection: 'column', justifyContent: 'flex-start' }}>
       <div> {gameOver === 'win' && <Alert variant="success">You win!</Alert>} </div>
       <div> {gameOver === 'lose' && <Alert variant="danger">Game over! The word was {SOLUTION}</Alert>} </div>
-      <div><Board currentGuess={currentGuess} attempts={attempts}/></div>
-      <div><Keyboard onCurrentGuessUpdate={handleCurrentGuessUpdate} onEnter={(currentGuess) => handleEnter(currentGuess)} showLetters={isMyTurn}/></div>
-      <div> {!gameOver && isMyTurn && <Alert variant="info">It's your turn!</Alert>} </div>
+      <div>
+        <Board
+          currentGuess={currentGuess}
+          attempts={attempts}
+        />
+      </div>
+      <div>
+        <Keyboard
+          keyColors={keyColors}
+          onCurrentGuessUpdate={handleCurrentGuessUpdate}
+          onEnter={(currentGuess) => handleEnter(currentGuess)}
+        />
+      </div>
+      <div> {!gameOver && isMyTurn && <Alert variant="info" className='mt-2'>It's your turn!</Alert>} </div>
     </Container>
     </>
   )
