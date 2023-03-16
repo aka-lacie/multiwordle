@@ -23,9 +23,9 @@ export default function WaitingRoom({username, room, isHost, onStartGame}: Props
   // }
 
   return (
-    <Container className="align-items-center d-flex" style={{ height: '100vh' }}>
+    <Container className="align-items-center d-flex" style={{ height: '80vh', flexDirection: 'column' }}>
       <h1>Waiting Room: {room}</h1>
-      { isHost && <Button onClick={onStartGame}>Start Game</Button> }
+      <div>{ isHost && <Button onClick={onStartGame}>Start Game</Button> }</div>
       {/* <div>
         {players.map((player, index) => (
           <div key={player.id}>{index + 1}. {player.name}</div>

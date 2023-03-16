@@ -3,10 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import Login from './Login'
 import WaitingRoom from './WaitingRoom'
 import Game from './Game'
-import io, { Socket as SocketIOClientSocket } from 'socket.io-client';
+import { Container } from 'react-bootstrap'
 import { Alert } from 'react-bootstrap'
-
-let socket : SocketIOClientSocket;
 
 export default function Body({ socket }) {
   useEffect(() => { 
@@ -21,17 +19,20 @@ export default function Body({ socket }) {
         setShowAlert({ show: true, msg: reason })
       });
 
-      console.log("starting listening for is-host")
       socket.on("is-host", (room: string) => {
-        console.log("you are the host of this room")
+        console.log("you are the host of this room: " + room)
         setHostState(true);
         setShowAlert({ show: true, msg: "You are the host of this room." })
       });
-      console.log("finished listening for is-host")
 
-      socket.on("start-game", () => {
+      socket.on("start-game", (solution : string) => {
+        setSolution(solution.toUpperCase());
         console.log("starting game");
         setGameState('Game');
+      });
+
+      socket.on("player-disconnect", (playerId: string) => {
+        setShowAlert({ show: true, msg: `Player ${playerId} has disconnected.` })
       });
   }
   
@@ -41,6 +42,7 @@ export default function Body({ socket }) {
 
   const [showAlert, setShowAlert] = useState({ show: false, msg: '' });
   const [gameState, setGameState] = useState('Login');
+  const [solution, setSolution] = useState('');
 
   
   const handleIdSubmit = ([name, room]: [string, string]) => {
@@ -71,7 +73,9 @@ export default function Body({ socket }) {
     case 'Game':
       return (<>
         { showAlert.show && <Alert variant="primary" onClose={() => setShowAlert({ show: false, msg: '' })} dismissible>{showAlert.msg}</Alert> }
-        <Game />
+        <Container className="align-items-center d-flex" style={{ width: '100vw' }}>
+          <Game socket={socket} room={room} isHost={hostState} SOLUTION={solution}/>
+        </Container>
       </>)
   }
 }

@@ -11,7 +11,7 @@ export default function Login({ onIdSubmit } : { onIdSubmit: (args: [string, str
   }
 
   return (
-    <Container className="align-items-center d-flex" style={{ height: '100vh' }}>
+    <Container className="align-items-center d-flex" style={{ height: '80vh', flexDirection: 'column', justifyContent: 'center' }}>
       <Form onSubmit={handleSubmit}>
         <Form.Group>
           <Form.Label>Player Name</Form.Label>
