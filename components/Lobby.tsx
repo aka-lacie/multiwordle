@@ -80,7 +80,7 @@ export default function Lobby({socket, username, room, isHost, onStartGame}: Lob
 
   const welcomeNotice: string = isHost ? 
     "Welcome to your lobby! Press Start Game when everyone is here." : 
-    "Welcome! Sit back and wait for your host (P1) to begin. If the host leaves, please refresh and join a new room.";
+    "Welcome! Sit back and wait for your host (P1) to begin. If the host leaves or isn't present, please refresh and join a new room.";
   
   return (
     <Container className="align-items-center d-flex" style={{ height: '80vh', flexDirection: 'column' }}>

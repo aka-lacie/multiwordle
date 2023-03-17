@@ -13,7 +13,7 @@ const Rules: React.FC<RulesProps> = ({ show, onHide }) => {
         <Modal.Title>Rules</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>Welcome to "'Round the Wordle"! This multiplayer game puts a new spin on the classic Wordle.</p>
+        <p>Welcome to 'Round the Wordle! This multiplayer game puts a new spin on the classic Wordle.</p>
         <ol>
           <li> A maximum of 6 players is support in each room. </li>
           <li> Or you can play alone with an endless supply of rounds!</li>

@@ -38,10 +38,6 @@ type Player = {
   id: string;
 }
 
-// really hacky way to prevent new joins after game started
-// TODO: fix inclusion check so that it isn't looking for strict equality
-const GAME_STARTED = "GAME_STARTED_SPECIAL_KEY" as unknown as RemoteSocket<ServerToClientEvents, SocketData>;
-
 const SocketHandler = (req, res) => {
   if (res.socket.server.io) {
     console.log("Socket is already running");
@@ -61,14 +57,8 @@ const SocketHandler = (req, res) => {
         socket.join(room);
         const roomMembers = await io.in(room).fetchSockets();
 
-        // Kick out if game already started
-        if (roomMembers.includes(GAME_STARTED)) {
-          socket.leave(room);
-          socket.emit("action-rejected", "The game has already started.");
-          console.log("Rejected: The game has already started.");
-          callback(false);
         // Kick out if room is full
-        } else if (roomMembers.length > 6) {
+        if (roomMembers.length > 6) {
           socket.leave(room);
           socket.emit("action-rejected", "Room is full.");
           console.log("Rejected: Room is full.");
@@ -95,17 +85,7 @@ const SocketHandler = (req, res) => {
       });
 
       // Handle start game request
-      socket.on("send-start", async (room) => {
-        const roomMembers = await io.in(room).fetchSockets();
-        
-        // Reject if not enough players
-        // if (roomMembers.length < 2) {
-        //   socket.emit("action-rejected", "Not enough players.");
-        //   console.log("Rejected: Not enough players.");
-        //   return;
-        // }
-        roomMembers.push(GAME_STARTED);
-
+      socket.on("send-start", (room) => {
         // Generate word
         const word = generateWord().toUpperCase();
         io.in(room).emit("start-game", word);
