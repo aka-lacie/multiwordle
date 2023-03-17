@@ -4,19 +4,25 @@ import * as path from 'path';
 
 interface ServerToClientEvents {
   noArg: () => void;
-  basicEmit: (a: number, b: string, c: Buffer) => void;
   withAck: (d: string, callback: (e: number) => void) => void;
   "action-rejected": (reason: string) => void;
+  "player-joined": (playerName: string, playerId: string) => void;
+  "update-players": (players: Player[]) => void;
   "start-game": (word: string) => void;
   "is-host": (room: string) => void;
+  "whose-turn": (playerName: string) => void;
   "start-turn": (nextPlayerId: string, guess: string | null) => void;
   "player-disconnect": (playerId: string) => void;
 }
 
 interface ClientToServerEvents {
   "join-room": (room: string, callback: any) => void;
+  "joined-lobby": (room: string, username: string) => void;
+  "host-update-players": (room: string, players: Player[]) => void;
   "send-start": (room: string) => void;
   "send-guess": (room: string, guess: string) => void;
+  "my-turn": (room: string, username: string) => void;
+  "leave-room": (room: string, username: string) => void;
 }
 
 interface InterServerEvents {
@@ -25,6 +31,11 @@ interface InterServerEvents {
 
 interface SocketData {
   name: string;
+}
+
+type Player = {
+  name: string;
+  id: string;
 }
 
 // really hacky way to prevent new joins after game started
@@ -71,7 +82,16 @@ const SocketHandler = (req, res) => {
           console.log(`socket ${socket.id} joined room: ${room}`);
           callback(true);
         }
+      });
 
+      // Handle joined lobby request and broadcast new player to room
+      socket.on("joined-lobby", (room, username) => {
+        socket.to(room).emit("player-joined", username, socket.id);
+      });
+
+      // Handle host update players request
+      socket.on("host-update-players", (room, players) => {
+        socket.to(room).emit("update-players", players);
       });
 
       // Handle start game request
@@ -87,9 +107,15 @@ const SocketHandler = (req, res) => {
         roomMembers.push(GAME_STARTED);
 
         // Generate word
-        const word = generateWord();
+        const word = generateWord().toUpperCase();
         io.in(room).emit("start-game", word);
-        console.log(`Game started in room: ${room}`);
+        console.log(`Game started in room: ${room} with solution: ${word}`);
+      });
+
+      // Handle my turn request
+      socket.on("my-turn", async (room, username) => {
+        console.log(`It's ${username}'s turn in room: ${room}`)
+        socket.to(room).emit("whose-turn", username);
       });
 
       // Handle send guess request
@@ -114,11 +140,13 @@ const SocketHandler = (req, res) => {
       });
 
       // Handle disconnect
-      socket.on("disconnecting", () => {
-        const rooms = Object.keys(socket.rooms);
-        console.log(`socket ${socket.id} disconnected from rooms: ${rooms}`);
+      socket.on("disconnecting", (reason) => {
+        console.log(`socket ${socket.id} rooms before disconnecting:`, socket.rooms);
+        const rooms = Array.from(socket.rooms);
+        console.log(`socket ${socket.id} disconnected from rooms: ${rooms.join(", ")}`);
+        console.log(`reason: ${reason}`)
         for (const room of rooms) {
-          io.to(room).emit("player-disconnect", socket.id);
+          if (room !== socket.id) socket.to(room).emit("player-disconnect", socket.id);
         }
       });
     });
@@ -127,7 +155,7 @@ const SocketHandler = (req, res) => {
 };
 
 const generateWord = () => {
-  const wordsFilePath = path.resolve(process.cwd(), 'assets', 'words.txt');
+  const wordsFilePath = path.resolve(process.cwd(), 'assets', 'wordle-La.txt');
   const words = fs.readFileSync(wordsFilePath, 'utf-8');
   const wordArr = words.split("\n");
   const word = wordArr[Math.floor(Math.random() * wordArr.length)];

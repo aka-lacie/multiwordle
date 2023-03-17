@@ -9,11 +9,10 @@ type Attempt = {
   showLetters: boolean,
 }
 
-export default function Game({ socket, room, isHost, SOLUTION } 
-  : { socket: any, room: string, isHost: boolean, SOLUTION: string }) {
+export default function Game({ socket, username, room, isHost, SOLUTION } 
+  : { socket: any, username: string, room: string, isHost: boolean, SOLUTION: string }) {
 
-  useEffect(() => { 
-    console.log("word: " + SOLUTION)
+  useEffect(() => {
     listenerInitializer()
     return () => {
       socket.removeAllListeners(['start-turn'])
@@ -21,6 +20,9 @@ export default function Game({ socket, room, isHost, SOLUTION }
   }, [])
 
   const listenerInitializer = () => {
+    socket.on("whose-turn", (playerName: string) => {
+      setWhoseTurn(playerName);
+    });
     socket.on("start-turn", (currPlayerId: string, guess: string | null) => {
       console.log("start-turn received");
       handleStartTurn(currPlayerId, guess);
@@ -28,8 +30,11 @@ export default function Game({ socket, room, isHost, SOLUTION }
   }
 
   // Host always starts first
+  const [whoseTurn, setWhoseTurn] = useState<string>(isHost ? username : '')
   const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost);
   const [currentGuess, setCurrentGuess] = useState<string>('');
+  const [flashRed, setFlashRed] = useState<boolean>(false);
+
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [gameOver, setGameOver] = useState<string>('');
   
@@ -81,6 +86,13 @@ export default function Game({ socket, room, isHost, SOLUTION }
     });
   }
 
+  // If it's my turn, let everyone know
+  useEffect(() => {
+    if (isMyTurn) {
+      socket.emit('my-turn', room, username);
+    }
+  }, [isMyTurn]);
+
   // Monitor for game over
   useEffect(() => {
     // If out of tries, show the defeat notice
@@ -110,7 +122,10 @@ export default function Game({ socket, room, isHost, SOLUTION }
     console.log(data)
     if (!data.isWord) {
       console.log("not a word")
-      // TODO: Alert board by flashing the guess red
+      setFlashRed(true);
+      setTimeout(() => {
+        setFlashRed(false);
+      }, 500);
       return false
     } else {
       console.log("guess validated")
@@ -124,20 +139,23 @@ export default function Game({ socket, room, isHost, SOLUTION }
     <Container className="align-items-center d-flex" style={{ height: '100vh', flexDirection: 'column', justifyContent: 'flex-start' }}>
       <div> {gameOver === 'win' && <Alert variant="success">You win!</Alert>} </div>
       <div> {gameOver === 'lose' && <Alert variant="danger">Game over! The word was {SOLUTION}</Alert>} </div>
+      <div> {!gameOver && !isMyTurn && <Alert variant="secondary" className='mt-2'>Waiting for {whoseTurn}...</Alert>} </div>
+      <div> {!gameOver && isMyTurn && <Alert variant="info" className='mt-2'>It's your turn!</Alert>} </div>
       <div>
         <Board
           currentGuess={currentGuess}
           attempts={attempts}
+          flashRed={flashRed}
         />
       </div>
-      <div>
+      <div className='mt-3'>
         <Keyboard
           keyColors={keyColors}
+          enabled={!gameOver && isMyTurn}
           onCurrentGuessUpdate={handleCurrentGuessUpdate}
           onEnter={(currentGuess) => handleEnter(currentGuess)}
         />
       </div>
-      <div> {!gameOver && isMyTurn && <Alert variant="info" className='mt-2'>It's your turn!</Alert>} </div>
     </Container>
     </>
   )

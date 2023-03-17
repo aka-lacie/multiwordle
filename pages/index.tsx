@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import io, { Socket as SocketIOClientSocket } from 'socket.io-client';
-import { Alert } from 'react-bootstrap'
+import { Button } from 'react-bootstrap'
 import Body from '@/components/Body'
+import Rules from '@/components/Rules'
 
 export default function Home() {
   const [socket, setSocket] = useState<SocketIOClientSocket | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     socketInitializer();
@@ -25,12 +27,21 @@ export default function Home() {
     });
   }
 
+  const toggleRules = () => {
+    setShowRules(!showRules);
+  };
+
   return (
     <>
-      <h1 style={{ textAlign: 'center' }}>'Round The Wordle</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Button variant="success" onClick={toggleRules} style={{ position: 'absolute', marginLeft: '5px' }}>
+          Read Rules
+        </Button>
+        <h1 style={{ textAlign: 'center', width: '100%' }}>'Round the Wordle</h1>
+      </div>
       <hr/>
       <div>{ socket && <Body socket={socket}/> }</div>
-      {/* <div>Your ID: { socket && socket.id}</div> */}
+      <Rules show={showRules} onHide={toggleRules} />
     </>
   )
 }

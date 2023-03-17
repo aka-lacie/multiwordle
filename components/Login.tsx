@@ -15,11 +15,11 @@ export default function Login({ onIdSubmit } : { onIdSubmit: (args: [string, str
       <Form onSubmit={handleSubmit}>
         <Form.Group>
           <Form.Label>Player Name</Form.Label>
-          <Form.Control type="text" placeholder="Enter your name" ref={userRef} required />
+          <Form.Control type="text" placeholder="Enter name (A-Z)" ref={userRef} required maxLength={10} pattern="^[a-zA-Z]*$"/>
         </Form.Group>
         <Form.Group className="mt-2">
           <Form.Label>Room ID</Form.Label>
-          <Form.Control type="text" placeholder="Enter room ID" ref={roomRef} required />
+          <Form.Control type="text" placeholder="Enter code (A-Z | 0-9)" ref={roomRef} required maxLength={10} pattern="^[a-zA-Z0-9]*$"/>
         </Form.Group>
         <Button type="submit" className="mt-3">Join Room</Button>
       </Form>

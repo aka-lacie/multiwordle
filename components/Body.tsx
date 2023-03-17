@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import Login from './Login'
-import WaitingRoom from './WaitingRoom'
+import Lobby from './Lobby'
 import Game from './Game'
 import { Container } from 'react-bootstrap'
 import { Alert } from 'react-bootstrap'
@@ -11,6 +11,7 @@ export default function Body({ socket }) {
     listenerInitializer()
     return () => {
       socket.removeAllListeners(['action-rejected', 'is-host', 'start-game'])
+      socket.emit("leave-room", room, name)
     }
   }, [])
 
@@ -26,13 +27,9 @@ export default function Body({ socket }) {
       });
 
       socket.on("start-game", (solution : string) => {
-        setSolution(solution.toUpperCase());
+        setSolution(solution); // should be set to uppercase from server
         console.log("starting game");
         setGameState('Game');
-      });
-
-      socket.on("player-disconnect", (playerId: string) => {
-        setShowAlert({ show: true, msg: `Player ${playerId} has disconnected.` })
       });
   }
   
@@ -50,7 +47,7 @@ export default function Body({ socket }) {
     setRoom(room)
 
     socket.emit("join-room", room, (success: boolean) => {
-      if (success) setGameState('WaitingRoom')
+      if (success) setGameState('Lobby')
     })
   }
 
@@ -65,16 +62,16 @@ export default function Body({ socket }) {
         { showAlert.show && <Alert variant="primary" onClose={() => setShowAlert({ show: false, msg: '' })} dismissible>{showAlert.msg}</Alert> }
         <Login onIdSubmit={handleIdSubmit} />
       </>)
-    case 'WaitingRoom':
+    case 'Lobby':
       return (<>
         { showAlert.show && <Alert variant="primary" onClose={() => setShowAlert({ show: false, msg: '' })} dismissible>{showAlert.msg}</Alert> }
-        <WaitingRoom username={name} room={room} isHost={hostState} onStartGame={handleStartGame}/>
+        <Lobby socket={socket} username={name} room={room} isHost={hostState} onStartGame={handleStartGame}/>
       </>)
     case 'Game':
       return (<>
         { showAlert.show && <Alert variant="primary" onClose={() => setShowAlert({ show: false, msg: '' })} dismissible>{showAlert.msg}</Alert> }
         <Container className="align-items-center d-flex" style={{ width: '100vw' }}>
-          <Game socket={socket} room={room} isHost={hostState} SOLUTION={solution}/>
+          <Game socket={socket} username={name} room={room} isHost={hostState} SOLUTION={solution}/>
         </Container>
       </>)
   }

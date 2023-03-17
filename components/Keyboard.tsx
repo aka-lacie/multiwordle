@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from 'react-bootstrap';
 
 const keyboardLayout = [
@@ -7,11 +7,14 @@ const keyboardLayout = [
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACK'],
 ];
 
-function Keyboard({ keyColors, onCurrentGuessUpdate, onEnter }
-  : { keyColors: Map<string, string>, onCurrentGuessUpdate: (guess: string) => void, onEnter: (currentGuess: string) => Promise<boolean> }) {
+function Keyboard({ keyColors, enabled, onCurrentGuessUpdate, onEnter }
+  : { keyColors: Map<string, string>, enabled: boolean,
+    onCurrentGuessUpdate: (guess: string) => void,
+    onEnter: (currentGuess: string) => Promise<boolean> }) {
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
   
   const handleKeyClick = (letter: string) => {
+    if (!enabled) return;
     if (letter === 'ENTER') {
       setCurrentGuess((currentGuess) => {
         console.log(currentGuess.length);
@@ -43,7 +46,7 @@ function Keyboard({ keyColors, onCurrentGuessUpdate, onEnter }
     }
   }
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = useCallback((event) => {
     const letter = event.key.toUpperCase();
     if (event.key === 'Enter') {
       handleKeyClick('ENTER');
@@ -52,14 +55,14 @@ function Keyboard({ keyColors, onCurrentGuessUpdate, onEnter }
     } else if (keyboardLayout.some((row) => row.includes(letter))) {
       handleKeyClick(letter);
     }
-  };
+  }, [enabled]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [handleKeyDown]);
 
   useEffect(() => {
     console.log('Current guess: ', currentGuess.join(''));
@@ -68,8 +71,8 @@ function Keyboard({ keyColors, onCurrentGuessUpdate, onEnter }
 
   return (
     <div className="keyboard">
-      { keyboardLayout.map((row, rowIndex) => (
-        <div key={rowIndex}>
+      {keyboardLayout.map((row, rowIndex) => (
+        <div key={rowIndex} className="keyboard-row">
           {row.map((letter) => (
             <Key
               key={letter}
@@ -100,7 +103,7 @@ function Key({ letter, color, onClick, disabled }) {
     case 'grey':
       bgColor = '#787c7e'
   }
-  
+
   const style = {
     backgroundColor: bgColor, 
     border: 'None',
