@@ -1,6 +1,6 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-This project uses Next.js and Socket.io, which was largely an educational choice.
+A multiplayer, collaborative Wordle game. This project uses Next.js and Socket.io, which was largely an educational choice.
 
 ## Getting Started
 
